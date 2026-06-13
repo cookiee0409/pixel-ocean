@@ -1,0 +1,6 @@
+# server.mjs is a LOCAL dev server only. If it ships to Vercel, Vercel deploys
+# it as a Serverless Function that captures every route and can't read the
+# static files (404 "Not found"). Excluding it makes Vercel serve this repo as
+# a plain static site, which is what we want.
+server.mjs
+node_modules
