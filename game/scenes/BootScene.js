@@ -64,15 +64,43 @@ export default class BootScene extends Phaser.Scene {
 
   // -------------------------------------------------- player & projectiles
   makePlayerAndProjectiles() {
-    // Small submarine, facing right. flipX gives the left-facing pose.
+    // Diving-suit knight, facing right (sword forward). flipX = left pose.
     this.draw("sub", 34, 20, (g) => {
-      this.rect(g, 0xffd34d, 4, 6, 22, 10); // hull
-      this.rect(g, 0xffe88a, 4, 6, 22, 3); // highlight
-      this.rect(g, 0xd99a1f, 4, 13, 22, 3); // shade
-      this.rect(g, 0x2b3a55, 0, 9, 5, 5); // tail fin
-      this.rect(g, 0x9be7ff, 17, 8, 6, 6); // window
-      this.rect(g, 0xffffff, 18, 9, 2, 2); // window glint
-      this.rect(g, 0xff7a4d, 26, 9, 5, 3); // nose light
+      // back shield (round, gold rim, steel face, cross)
+      g.fillStyle(0xe7c97a, 1);
+      g.fillCircle(7, 11, 6);
+      g.fillStyle(0x5f7da6, 1);
+      g.fillCircle(7, 11, 4.5);
+      this.rect(g, 0xcfe0f5, 6, 6, 2, 10, 0.85); // cross vertical
+      this.rect(g, 0xcfe0f5, 3, 10, 8, 2, 0.85); // cross horizontal
+
+      // armoured torso (chestplate) with gold belt
+      this.rect(g, 0x40608c, 10, 7, 12, 10);
+      this.rect(g, 0x6f93c0, 10, 7, 12, 3, 0.9); // highlight
+      this.rect(g, 0x2c466e, 10, 14, 12, 3); // shade
+      this.rect(g, 0xe7c97a, 10, 12, 12, 2); // belt
+
+      // boots / fins
+      this.rect(g, 0x223049, 11, 16, 4, 4);
+      this.rect(g, 0x223049, 17, 16, 4, 4);
+      this.rect(g, 0x2b3a55, 9, 19, 14, 1);
+
+      // diving great-helm with a glowing porthole visor + plume
+      this.rect(g, 0x9fb0c8, 19, 3, 11, 11);
+      this.rect(g, 0xc3d0e2, 19, 3, 11, 3, 0.9); // helm highlight
+      this.rect(g, 0x6f8098, 19, 11, 11, 3); // helm shade
+      this.rect(g, 0x123a5a, 21, 6, 8, 5); // visor frame
+      this.rect(g, 0x9be7ff, 22, 7, 6, 3); // glass
+      this.rect(g, 0xffffff, 23, 7, 2, 1, 0.9); // glint
+      this.rect(g, 0xd64545, 22, 0, 6, 3); // plume crest
+      this.rect(g, 0xf06a6a, 22, 0, 6, 1, 0.9);
+
+      // glowing sword held forward (right)
+      this.rect(g, 0xe7c97a, 27, 12, 5, 2); // crossguard
+      this.rect(g, 0x8a5a2a, 29, 13, 2, 4); // grip
+      this.rect(g, 0x9be7ff, 29, 1, 5, 2, 0.8); // tip glow
+      this.rect(g, 0xdfeffb, 30, 2, 3, 11); // blade
+      this.rect(g, 0xffffff, 31, 2, 1, 11, 0.9); // blade shine
     });
 
     // Bubble.
@@ -82,11 +110,13 @@ export default class BootScene extends Phaser.Scene {
       this.rect(g, 0xffffff, 3, 2, 2, 2, 0.9);
     });
 
-    // Harpoon / energy bolt.
-    this.draw("proj", 12, 6, (g) => {
-      this.rect(g, 0xfff2a8, 0, 2, 12, 2);
-      this.rect(g, 0xffffff, 8, 1, 4, 4);
-      this.rect(g, 0xffb84d, 0, 2, 4, 2);
+    // Basic attack: a thrown crescent blade of sword-energy (검기).
+    // Texture points "forward" along +x; Projectile rotates it to its velocity.
+    this.draw("proj", 14, 8, (g) => {
+      g.fillStyle(0x49c8ff, 0.85);
+      g.fillTriangle(0, 4, 12, 0, 12, 8); // crescent body
+      this.rect(g, 0xeaffff, 6, 3, 7, 2); // bright core
+      this.rect(g, 0xffffff, 10, 1, 3, 6, 0.95); // leading edge
     });
   }
 

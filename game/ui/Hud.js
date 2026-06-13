@@ -78,20 +78,37 @@ export default class Hud {
   }
 
   // -------------------------------------------------------- action buttons
+  // Combat + skill buttons arranged in a row inside a box-shaped banner panel
+  // anchored to the bottom-right.
   makeActionButtons() {
-    const bx = VIEW_WIDTH - 70;
-    const by = VIEW_HEIGHT - 60;
-    this.attackBtn = this.makeButton(bx, by, 30, "공격\nSpace", 0xffd34d, {
+    const panelW = 250;
+    const panelH = 84;
+    const panelX = VIEW_WIDTH - panelW - 14;
+    const panelY = VIEW_HEIGHT - panelH - 14;
+
+    const panel = this.scene.add.graphics().setScrollFactor(0).setDepth(UI_DEPTH - 1);
+    panel.fillStyle(0x06182e, 0.82);
+    panel.fillRoundedRect(panelX, panelY, panelW, panelH, 10);
+    panel.lineStyle(2, 0x2f5c86, 0.9);
+    panel.strokeRoundedRect(panelX, panelY, panelW, panelH, 10);
+    this.txt(panelX + 12, panelY + 8, "전투 · 스킬", 11, "#7fb6dc");
+
+    const r = 22;
+    const cy = panelY + panelH - 30;
+    const x0 = panelX + 36;
+    const gap = 59;
+
+    this.attackBtn = this.makeButton(x0, cy, r, "검기\nSPACE", 0xffd34d, {
       onDown: () => (this.attackHeld = true),
       onUp: () => (this.attackHeld = false),
     });
-    this.dashBtn = this.makeButton(bx - 64, by + 6, 24, "대시\nQ", 0x66e0c0, {
+    this.dashBtn = this.makeButton(x0 + gap, cy, r, "돌격\nQ", 0x66e0c0, {
       onTap: () => (this.triggers.dash = true),
     });
-    this.lightBtn = this.makeButton(bx - 16, by - 56, 24, "빛\nE", 0xfff07a, {
+    this.lightBtn = this.makeButton(x0 + gap * 2, cy, r, "성광\nE", 0xfff07a, {
       onTap: () => (this.triggers.light = true),
     });
-    this.interactBtn = this.makeButton(bx + 4, by - 64, 20, "F", 0x9be7ff, {
+    this.interactBtn = this.makeButton(x0 + gap * 3, cy, r, "교감\nF", 0x9be7ff, {
       onTap: () => (this.triggers.interact = true),
     });
   }

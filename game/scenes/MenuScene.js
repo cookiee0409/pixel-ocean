@@ -52,7 +52,7 @@ export default class MenuScene extends Phaser.Scene {
       .text(
         cx,
         350,
-        "이동 WASD/방향키   ·   공격 Space   ·   대시 Q   ·   빛 폭발 E   ·   상호작용 F   ·   도감 Tab   ·   일시정지 Esc",
+        "이동 WASD/방향키   ·   검기 Space   ·   돌격 Q   ·   성광 E   ·   교감 F   ·   도감 Tab   ·   일시정지 Esc",
         { fontFamily: "monospace", fontSize: "12px", color: "#8fb6d6", align: "center" }
       )
       .setOrigin(0.5);

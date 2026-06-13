@@ -28,6 +28,8 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.lastAttack = 0;
     this.cooldowns = { dash: 0, lightBurst: 0 };
     this.invulnUntil = 0;
+    this.dashUntil = 0; // while dashing, the charge rams enemies
+    this.dashDamage = SKILLS.dash.damage;
     this.alive = true;
 
     // Bubble trail.
@@ -91,9 +93,14 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     const dir = this.aim.lengthSq() > 0 ? this.aim.clone() : new Phaser.Math.Vector2(this.facing, 0);
     dir.normalize();
     this.body.setVelocity(dir.x * s.power, dir.y * s.power);
-    // brief i-frames + afterimage flash
+    // brief i-frames + charge window (rams enemies) + afterimage flash
     this.invulnUntil = Math.max(this.invulnUntil, now + s.durationMs);
+    this.dashUntil = now + s.durationMs;
     this.scene.spawnDashTrail(this.x, this.y);
+  }
+
+  isDashing() {
+    return this.scene.time.now < this.dashUntil;
   }
 
   tryLightBurst() {

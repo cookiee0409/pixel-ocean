@@ -43,12 +43,9 @@ export default class GameScene extends Phaser.Scene {
 
     this.buildBackdrop();
 
-    // Entity groups.
-    this.projectiles = this.physics.add.group({
-      classType: Projectile,
-      maxSize: 30,
-      runChildUpdate: true,
-    });
+    // Entity groups. Projectiles are a plain group used only for overlap
+    // tracking; each Projectile owns its own physics body and lifecycle.
+    this.projectiles = this.add.group();
     this.enemies = this.add.group();
     this.friendlies = this.add.group();
     this.items = this.add.group();
@@ -210,9 +207,7 @@ export default class GameScene extends Phaser.Scene {
 
   // ------------------------------------------------ entity/system callbacks
   fireProjectile(x, y, vx, vy, damage) {
-    const p = this.projectiles.get();
-    if (!p) return;
-    p.fire(x, y, vx, vy, damage);
+    this.projectiles.add(new Projectile(this, x, y, vx, vy, damage));
   }
 
   triggerLightBurst(x, y, radius, damage) {

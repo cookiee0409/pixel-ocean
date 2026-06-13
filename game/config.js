@@ -31,7 +31,13 @@ export const PLAYER = {
   invulnMs: 900,
 };
 
+// Knight-themed skills.
+//  dash  -> "돌격" : a charging lunge that rams (damages) enemies in its path.
+//  lightBurst -> "성광" : a holy radiant burst that damages nearby foes and
+//                lights up the dark deep.
 export const SKILLS = {
-  dash: { key: "Q", energy: 28, cooldown: 1400, power: 470, durationMs: 220 },
-  lightBurst: { key: "E", energy: 42, cooldown: 4200, radius: 150, damage: 34 },
+  dash: { key: "Q", name: "돌격", energy: 28, cooldown: 1400, power: 480, durationMs: 240, damage: 24 },
+  lightBurst: { key: "E", name: "성광", energy: 42, cooldown: 4200, radius: 155, damage: 36 },
 };
+
+export const ATTACK_NAME = "검기"; // basic attack: a thrown blade of sword-energy
