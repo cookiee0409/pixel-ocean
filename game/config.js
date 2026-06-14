@@ -20,17 +20,19 @@ export const WORLD_HEIGHT = START_Y + MAX_DEPTH * PIXELS_PER_METER + 200;
 // wider chambers — via channelHalfAt(). Walls fill everything outside
 // [center - half, center + half].
 export const CHANNEL_HALF = 150; // nominal half-width (kept for reference)
-export const CAVE_PERIOD = 1400; // px of descent per main left↔right swing
+export const CAVE_PERIOD = 2000; // px of descent per main left↔right swing
+// Gentler swing + wider tunnel so consecutive bands always overlap enough for
+// the diver to pass — the channel can never pinch into a dead end.
 export const caveCenterX = (y) => {
   const w = (Math.PI * 2) / CAVE_PERIOD;
   return (
     WORLD_WIDTH / 2 +
-    Math.sin(y * w) * 500 + // main switchback swing
-    Math.sin(y * w * 2.7 + 1.3) * 78 // smaller organic wobble
+    Math.sin(y * w) * 380 + // main swing
+    Math.sin(y * w * 2.3 + 1.3) * 50 // smaller organic wobble
   );
 };
 export const channelHalfAt = (y) =>
-  150 + Math.sin(y * ((Math.PI * 2) / 900)) * 44 + Math.sin(y * 0.013 + 2.1) * 14;
+  150 + Math.sin(y * ((Math.PI * 2) / 1100)) * 34 + Math.sin(y * 0.011 + 2.1) * 12;
 // Gentle constant sink so "down" is the default and steering left/right is the
 // active play, per the requested feel.
 export const SINK_CURRENT = 70;

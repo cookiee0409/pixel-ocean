@@ -206,10 +206,11 @@ export default class GameScene extends Phaser.Scene {
       for (const s of this.shafts) s.setVisible(k > 0.02);
     }
 
-    // gentle water drift on the camera (subtle, keeps the scene alive)
+    // Camera leads downward so you can see the descent below you, plus a gentle
+    // water drift to keep the scene alive.
     const cam = this.cameras.main;
     cam.followOffset.x = Math.sin(time / 1500) * 3;
-    cam.followOffset.y = Math.cos(time / 1900) * 2;
+    cam.followOffset.y = -70 + Math.cos(time / 1900) * 2;
   }
 
   // --------------------------------------------------- interaction (F)
@@ -406,12 +407,21 @@ export default class GameScene extends Phaser.Scene {
     return "abyss";
   }
 
-  // Per-biome stone tints for the cave walls (multiply: bright surface → dark deep).
+  // Per-biome stone tints. Walls are kept clearly DARKER than the bright water
+  // channel so the navigable path reads as the brightest band (figure/ground).
   static WALL_TINT = {
-    sunlight: 0xcfe0ea,
-    midsea: 0x9fb6cc,
-    deepsea: 0x5f7290,
-    abyss: 0x39465f,
+    sunlight: 0x6f8aa6,
+    midsea: 0x46627e,
+    deepsea: 0x283a54,
+    abyss: 0x17202f,
+  };
+
+  // Bright rim along the channel edge — "carved rock" rim light + path cue.
+  static RIM_TINT = {
+    sunlight: 0xbfeeff,
+    midsea: 0x86c6e6,
+    deepsea: 0x4f86b0,
+    abyss: 0x35597a,
   };
 
   // Random x inside the navigable channel at depth y (for spawns/props).
@@ -426,7 +436,7 @@ export default class GameScene extends Phaser.Scene {
   // zig-zag tunnel downward.
   buildCave() {
     this.caveWalls = [];
-    const BAND = 64;
+    const BAND = 48;
     for (let y = 0; y < WORLD_HEIGHT; y += BAND) {
       const my = y + BAND / 2;
       const cx = caveCenterX(my);
@@ -445,7 +455,8 @@ export default class GameScene extends Phaser.Scene {
     const ts = this.add.tileSprite(x, y, w, h, key).setOrigin(0, 0).setDepth(4).setTint(tint);
     ts.tilePositionX = (Math.floor(x / 7) * 13) % 32; // break up the seam grid
     ts.tilePositionY = (Math.floor(y / 5) * 11) % 32;
-    // carved inner lip at the channel edge
+    // carved inner lip at the channel edge — bright rim light marks the path
+    const rim = GameScene.RIM_TINT[this.biomeAtY(worldY)];
     const innerX = lipSide === "right" ? x + w : x; // the edge facing the channel
     const lipX = lipSide === "right" ? x + w - 10 : x;
     this.add
@@ -454,7 +465,12 @@ export default class GameScene extends Phaser.Scene {
       .setDisplaySize(10, h)
       .setDepth(6)
       .setFlipX(lipSide === "left")
-      .setTint(tint);
+      .setTint(rim);
+    // thin bright highlight strip right on the channel boundary
+    this.add
+      .rectangle(innerX, y, 2, h, rim, 0.5)
+      .setOrigin(lipSide === "right" ? 1 : 0, 0)
+      .setDepth(7);
 
     // Organic rock accents jutting from the channel wall: boulders, and
     // stalactites/stalagmites — breaks up the brick repetition.

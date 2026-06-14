@@ -699,9 +699,9 @@ export default class BootScene extends Phaser.Scene {
     const ctx = canvasTex.getContext();
     const grd = ctx.createRadialGradient(size / 2, size / 2, 4, size / 2, size / 2, size / 2);
     grd.addColorStop(0.0, "rgba(0,0,0,0)");
-    grd.addColorStop(0.1, "rgba(0,0,0,0)");
-    grd.addColorStop(0.24, "rgba(0,0,0,0.72)");
-    grd.addColorStop(0.34, "rgba(0,0,0,1)");
+    grd.addColorStop(0.16, "rgba(0,0,0,0)");
+    grd.addColorStop(0.42, "rgba(0,0,0,0.55)");
+    grd.addColorStop(0.62, "rgba(0,0,0,0.9)");
     grd.addColorStop(1.0, "rgba(0,0,0,1)");
     ctx.fillStyle = grd;
     ctx.fillRect(0, 0, size, size);

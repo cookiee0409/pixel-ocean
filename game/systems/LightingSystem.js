@@ -36,6 +36,31 @@ export default class LightingSystem {
       .setDepth(91)
       .setVisible(false);
 
+    // Always-on vignette frames the view for a deep-sea, under-pressure mood.
+    const vsize = 256;
+    const vtex = scene.textures.createCanvas("vignette", vsize, vsize);
+    const vctx = vtex.getContext();
+    const vg = vctx.createRadialGradient(vsize / 2, vsize / 2, vsize * 0.3, vsize / 2, vsize / 2, vsize * 0.62);
+    vg.addColorStop(0, "rgba(0,0,0,0)");
+    vg.addColorStop(1, "rgba(2,8,16,0.6)");
+    vctx.fillStyle = vg;
+    vctx.fillRect(0, 0, vsize, vsize);
+    vtex.refresh();
+    scene.add
+      .image(VIEW_WIDTH / 2, VIEW_HEIGHT / 2, "vignette")
+      .setScrollFactor(0)
+      .setDepth(92)
+      .setDisplaySize(VIEW_WIDTH + 60, VIEW_HEIGHT + 60);
+
+    // Soft additive bloom around the diver for a glowing light source.
+    this.playerGlow = scene.add
+      .image(VIEW_WIDTH / 2, VIEW_HEIGHT / 2, "glow")
+      .setScrollFactor(0)
+      .setDepth(91)
+      .setBlendMode(Phaser.BlendModes.ADD)
+      .setAlpha(0.2)
+      .setDisplaySize(340, 340);
+
     this.currentAlpha = 0;
     this.bursting = false;
   }
@@ -45,6 +70,7 @@ export default class LightingSystem {
     const sx = this.player.x - cam.scrollX;
     const sy = this.player.y - cam.scrollY;
     this.maskImg.setPosition(sx, sy);
+    this.playerGlow.setPosition(sx, sy);
 
     const target = blendZoneField(this.depthSystem.depth, "darkness");
     if (!this.bursting) {
