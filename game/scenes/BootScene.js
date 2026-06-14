@@ -117,6 +117,36 @@ export default class BootScene extends Phaser.Scene {
       this.rect(g, stone.edge, 0, 0, 3, TS, 0.9);
       for (let y = 0; y < TS; y += 3) this.rect(g, stone.base, 3 + (y % 6 === 0 ? 1 : 0), y, 4, 2, 0.6);
     });
+
+    // Rounded stone boulder clump that blends into the wall (tinted in scene).
+    this.draw("cave_boulder", 30, 26, (g) => {
+      g.fillStyle(stone.edge, 1);
+      g.fillEllipse(15, 15, 28, 22);
+      g.fillStyle(stone.base, 1);
+      g.fillEllipse(15, 14, 24, 18);
+      g.fillStyle(stone.lite, 0.75);
+      g.fillEllipse(11, 10, 12, 7);
+      g.fillStyle(stone.dark, 0.7);
+      g.fillEllipse(20, 18, 12, 8);
+      for (let i = 0; i < 44; i++) {
+        const x = ((i * 7) % 26) + 2;
+        const y = ((i * 11) % 20) + 3;
+        this.rect(g, i % 3 ? stone.dark : stone.lite, x, y, 1, 1, 0.5);
+      }
+      this.rect(g, stone.edge, 12, 8, 1, 8, 0.6);
+      this.rect(g, stone.edge, 18, 13, 1, 6, 0.5);
+    });
+
+    // Tapered rock spike (stalactite/stalagmite — origin flips it in GameScene).
+    this.draw("cave_spike", 16, 46, (g) => {
+      g.fillStyle(stone.edge, 1);
+      g.fillTriangle(1, 0, 15, 0, 8, 46);
+      g.fillStyle(stone.base, 1);
+      g.fillTriangle(3, 0, 13, 0, 8, 42);
+      g.fillStyle(stone.lite, 0.7);
+      g.fillTriangle(5, 0, 8, 0, 7, 26);
+      for (let i = 0; i < 12; i++) this.rect(g, i % 2 ? stone.dark : stone.lite, 4 + ((i * 3) % 8), i * 4, 1, 1, 0.6);
+    });
   }
 
   // ---------------------------------------------------------------- props
@@ -424,6 +454,32 @@ export default class BootScene extends Phaser.Scene {
       this.rect(g, P.eyeDark, 1, 10, 1, 1);
       this.oRect(g, P.kelp.dark, 5, 16, 6, 4); // flippers
       this.oRect(g, P.kelp.dark, 18, 16, 6, 4);
+    });
+
+    // hostile fast predator fish (sleek, cold, red eye, forked tail)
+    this.draw("fast_fish", 30, 16, (g) => {
+      // forked tail
+      g.fillStyle(P.outline, 1);
+      g.fillTriangle(20, 8, 30, 1, 30, 15);
+      g.fillStyle(P.predator.dark, 1);
+      g.fillTriangle(21, 8, 28, 3, 28, 13);
+      g.fillStyle(P.water.midsea.bg, 1);
+      g.fillTriangle(27, 8, 30, 5, 30, 11); // notch (fork)
+      // streamlined body
+      this.oEllipse(g, P.predator.mid, 13, 8, 22, 10);
+      this.rect(g, P.predator.lite, 6, 5, 12, 2, 0.8); // top sheen
+      this.rect(g, P.predator.dark, 8, 11, 12, 2, 0.7); // belly shade
+      this.rect(g, P.predator.lite, 9, 8, 8, 1, 0.5); // lateral line
+      // dorsal + pelvic fins
+      g.fillStyle(P.predator.dark, 1);
+      g.fillTriangle(11, 3, 17, 3, 14, -1);
+      g.fillTriangle(10, 13, 15, 13, 12, 17);
+      // snout + red eye + small teeth
+      g.fillStyle(P.predator.dark, 1);
+      g.fillTriangle(3, 6, 3, 10, 0, 8);
+      this.rect(g, P.eyeRed, 5, 6, 3, 3);
+      this.rect(g, P.white, 5, 6, 1, 1, 0.8);
+      for (let i = 0; i < 3; i++) g.fillTriangle(2 + i * 2, 10, 4 + i * 2, 10, 3 + i * 2, 12);
     });
 
     // neutral jellyfish (glow)

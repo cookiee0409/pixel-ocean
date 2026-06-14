@@ -14,14 +14,23 @@ export const WORLD_WIDTH = 1600;
 export const MAX_DEPTH = 1850; // meters
 export const WORLD_HEIGHT = START_Y + MAX_DEPTH * PIXELS_PER_METER + 200;
 
-// Winding cave channel. centerX snakes as a sine of depth; the player swims
-// left/right (the base control) to follow it down. Walls fill everything
-// outside [center - CHANNEL_HALF, center + CHANNEL_HALF].
-export const CHANNEL_HALF = 156; // half-width of the navigable tunnel (px)
-export const CAVE_PERIOD = 1500; // px of descent per full left↔right swing
-export const CAVE_AMP = WORLD_WIDTH / 2 - CHANNEL_HALF - 50; // horizontal swing
-export const caveCenterX = (y) =>
-  WORLD_WIDTH / 2 + Math.sin(y * ((Math.PI * 2) / CAVE_PERIOD)) * CAVE_AMP;
+// Winding cave channel. centerX snakes as a sum of two sines (organic, not a
+// mechanical zig-zag); the player swims left/right (the base control) to follow
+// it down. The tunnel also breathes wider/narrower — narrow passages open into
+// wider chambers — via channelHalfAt(). Walls fill everything outside
+// [center - half, center + half].
+export const CHANNEL_HALF = 150; // nominal half-width (kept for reference)
+export const CAVE_PERIOD = 1400; // px of descent per main left↔right swing
+export const caveCenterX = (y) => {
+  const w = (Math.PI * 2) / CAVE_PERIOD;
+  return (
+    WORLD_WIDTH / 2 +
+    Math.sin(y * w) * 500 + // main switchback swing
+    Math.sin(y * w * 2.7 + 1.3) * 78 // smaller organic wobble
+  );
+};
+export const channelHalfAt = (y) =>
+  150 + Math.sin(y * ((Math.PI * 2) / 900)) * 44 + Math.sin(y * 0.013 + 2.1) * 14;
 // Gentle constant sink so "down" is the default and steering left/right is the
 // active play, per the requested feel.
 export const SINK_CURRENT = 70;

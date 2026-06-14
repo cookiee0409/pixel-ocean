@@ -10,8 +10,8 @@ import {
   START_Y,
   MAX_DEPTH,
   BOSS_DEPTH,
-  CHANNEL_HALF,
   caveCenterX,
+  channelHalfAt,
   yToDepth,
 } from "../config.js";
 import { PAL } from "../data/palette.js";
@@ -417,7 +417,7 @@ export default class GameScene extends Phaser.Scene {
   // Random x inside the navigable channel at depth y (for spawns/props).
   channelXAt(y, pad = 26) {
     const cx = caveCenterX(y);
-    const half = Math.max(20, CHANNEL_HALF - pad);
+    const half = Math.max(20, channelHalfAt(y) - pad);
     return cx + Phaser.Math.Between(-half, half);
   }
 
@@ -426,29 +426,63 @@ export default class GameScene extends Phaser.Scene {
   // zig-zag tunnel downward.
   buildCave() {
     this.caveWalls = [];
-    const BAND = 72;
+    const BAND = 64;
     for (let y = 0; y < WORLD_HEIGHT; y += BAND) {
-      const cx = caveCenterX(y + BAND / 2);
-      const leftEdge = Math.round(cx - CHANNEL_HALF);
-      const rightEdge = Math.round(cx + CHANNEL_HALF);
-      const tint = GameScene.WALL_TINT[this.biomeAtY(y + BAND / 2)];
-      if (leftEdge > 2) this.addWall(0, y, leftEdge, BAND, tint, "right");
-      if (rightEdge < WORLD_WIDTH - 2) this.addWall(rightEdge, y, WORLD_WIDTH - rightEdge, BAND, tint, "left");
+      const my = y + BAND / 2;
+      const cx = caveCenterX(my);
+      const half = channelHalfAt(my);
+      const leftEdge = Math.round(cx - half);
+      const rightEdge = Math.round(cx + half);
+      const biome = this.biomeAtY(my);
+      const tint = GameScene.WALL_TINT[biome];
+      if (leftEdge > 2) this.addWall(0, y, leftEdge, BAND, tint, "right", my);
+      if (rightEdge < WORLD_WIDTH - 2) this.addWall(rightEdge, y, WORLD_WIDTH - rightEdge, BAND, tint, "left", my);
     }
   }
 
-  addWall(x, y, w, h, tint, lipSide) {
-    const key = (Math.floor(y / 72) + Math.floor(x / 200)) % 2 === 0 ? "cave_wall" : "cave_wall2";
-    this.add.tileSprite(x, y, w, h, key).setOrigin(0, 0).setDepth(4).setTint(tint);
+  addWall(x, y, w, h, tint, lipSide, worldY) {
+    const key = (Math.floor(y / 64) + Math.floor(x / 200)) % 2 === 0 ? "cave_wall" : "cave_wall2";
+    const ts = this.add.tileSprite(x, y, w, h, key).setOrigin(0, 0).setDepth(4).setTint(tint);
+    ts.tilePositionX = (Math.floor(x / 7) * 13) % 32; // break up the seam grid
+    ts.tilePositionY = (Math.floor(y / 5) * 11) % 32;
     // carved inner lip at the channel edge
+    const innerX = lipSide === "right" ? x + w : x; // the edge facing the channel
     const lipX = lipSide === "right" ? x + w - 10 : x;
     this.add
       .image(lipX, y, "cave_edge")
       .setOrigin(0, 0)
       .setDisplaySize(10, h)
-      .setDepth(5)
+      .setDepth(6)
       .setFlipX(lipSide === "left")
       .setTint(tint);
+
+    // Organic rock accents jutting from the channel wall: boulders, and
+    // stalactites/stalagmites — breaks up the brick repetition.
+    const r = (worldY * 0.013 + x * 0.0007) % 1;
+    if (r < 0.26) {
+      const dir = lipSide === "right" ? -1 : 1; // into the channel
+      const bx = innerX + dir * Phaser.Math.Between(2, 10);
+      this.add
+        .image(bx, y + h / 2, "cave_boulder")
+        .setOrigin(0.5)
+        .setDepth(6)
+        .setTint(tint)
+        .setFlipX(lipSide === "left")
+        .setScale(Phaser.Math.FloatBetween(0.7, 1.2))
+        .setAngle(Phaser.Math.Between(-14, 14));
+    }
+    if (r > 0.55 && r < 0.72) {
+      // a spike (stalactite if upper band feel) hugging the edge
+      const dir = lipSide === "right" ? -1 : 1;
+      this.add
+        .image(innerX + dir * 5, y + (worldY % 2 === 0 ? 0 : h), "cave_spike")
+        .setOrigin(0.5, worldY % 2 === 0 ? 0 : 1)
+        .setDepth(6)
+        .setTint(tint)
+        .setFlipX(lipSide === "left")
+        .setScale(Phaser.Math.FloatBetween(0.8, 1.4), Phaser.Math.FloatBetween(0.9, 1.6));
+    }
+
     // invisible static collider for this wall block
     const zone = this.add.zone(x + w / 2, y + h / 2, w, h);
     this.physics.add.existing(zone, true);
@@ -477,8 +511,9 @@ export default class GameScene extends Phaser.Scene {
       const biome = this.biomeAtY(y);
       const set = GameScene.LAYERS[biome];
       const cx = caveCenterX(y);
+      const half = channelHalfAt(y);
       const onLeft = Math.random() < 0.5;
-      const edge = onLeft ? cx - CHANNEL_HALF : cx + CHANNEL_HALF;
+      const edge = onLeft ? cx - half : cx + half;
       const key = Phaser.Utils.Array.GetRandom(set.near.concat(set.mid));
       const x = edge + (onLeft ? Phaser.Math.Between(0, 24) : -Phaser.Math.Between(0, 24));
       const img = this.add
@@ -492,7 +527,7 @@ export default class GameScene extends Phaser.Scene {
       // close foreground silhouette (over the player, faded) for parallax depth
       if (Math.random() < 0.16) {
         const fKey = Phaser.Utils.Array.GetRandom(set.near);
-        const fEdge = onLeft ? cx + CHANNEL_HALF : cx - CHANNEL_HALF;
+        const fEdge = onLeft ? cx + half : cx - half;
         const f = this.add
           .image(fEdge + (onLeft ? -10 : 10), y + 30, fKey)
           .setOrigin(0.5, 1)
