@@ -153,35 +153,49 @@ export default class BootScene extends Phaser.Scene {
   makeProps() {
     const P = PAL;
 
-    // Slim seagrass blade.
-    this.draw("seaweed", 18, 70, (g) => {
-      for (let i = 0; i < 9; i++) {
-        const y = 62 - i * 7;
-        const x = 6 + Math.sin(i * 0.8) * 4;
-        this.oRect(g, P.seagrass.mid, x, y, 5, 8);
-        this.rect(g, P.seagrass.lite, x + 1, y, 2, 8, 0.8);
+    // Slim seagrass blade — many fine segments with a midrib and tiny fronds.
+    this.draw("seaweed", 20, 76, (g) => {
+      let px = 10;
+      for (let i = 0; i < 24; i++) {
+        const y = 72 - i * 3;
+        const x = 8 + Math.sin(i * 0.5) * 5;
+        const w = 5 - (i / 24) * 2.5;
+        this.oRect(g, P.seagrass.mid, x, y, w, 4);
+        this.rect(g, P.seagrass.lite, x + 0.5, y, 1, 4, 0.85); // midrib highlight
+        this.rect(g, P.kelp.dark, x + w - 1, y + 1, 1, 3, 0.5); // edge shade
+        if (i % 4 === 1) this.rect(g, P.seagrass.lite, x - 2, y + 1, 2, 2, 0.7); // tiny frond
+        px = x;
+      }
+      void px;
+    });
+
+    // Thick kelp stalk — fine segmented stem, leaf blades, gradient shading.
+    this.draw("kelp", 28, 100, (g) => {
+      for (let i = 0; i < 30; i++) {
+        const y = 94 - i * 3;
+        const x = 11 + Math.sin(i * 0.45) * 6;
+        const w = 6 - (i / 30) * 2;
+        this.oRect(g, P.kelp.mid, x, y, w, 4);
+        this.rect(g, P.kelp.lite, x + 1, y, 1, 4, 0.9); // bright midrib
+        this.rect(g, P.kelp.dark, x + w - 1, y + 1, 1, 3, 0.6); // shade edge
+        if (i % 3 === 0) {
+          const left = (i / 3) % 2 === 0;
+          const lx = left ? x - 6 : x + w;
+          // small leaf blade (2 stacked pixels tapering)
+          this.oRect(g, P.kelp.dark, lx, y + 1, 6, 3);
+          this.rect(g, P.kelp.mid, lx + (left ? 1 : 0), y + 1, 4, 1, 0.8);
+        }
       }
     });
 
-    // Thick kelp stalk with leaves.
-    this.draw("kelp", 26, 96, (g) => {
-      for (let i = 0; i < 11; i++) {
-        const y = 86 - i * 8;
-        const x = 9 + Math.sin(i * 0.7) * 6;
-        this.oRect(g, P.kelp.mid, x, y, 7, 9);
-        this.rect(g, P.kelp.lite, x + 1, y + 1, 2, 7, 0.85);
-        if (i % 2 === 0) this.oRect(g, P.kelp.dark, x - 4, y + 2, 4, 5); // leaf left
-        else this.oRect(g, P.kelp.dark, x + 7, y + 2, 4, 5); // leaf right
-      }
-    });
-
-    // Very tall background kelp (parallax far layer).
-    this.draw("kelp_tall", 22, 150, (g) => {
-      for (let i = 0; i < 18; i++) {
-        const y = 140 - i * 8;
-        const x = 8 + Math.sin(i * 0.55) * 6;
-        this.oRect(g, P.kelp.dark, x, y, 6, 9);
-        this.rect(g, P.kelp.mid, x + 1, y + 1, 2, 7, 0.7);
+    // Very tall background kelp (parallax far layer) — dense fine stem.
+    this.draw("kelp_tall", 24, 156, (g) => {
+      for (let i = 0; i < 50; i++) {
+        const y = 150 - i * 3;
+        const x = 10 + Math.sin(i * 0.32) * 7;
+        this.oRect(g, P.kelp.dark, x, y, 5, 4);
+        this.rect(g, P.kelp.mid, x + 1, y, 2, 4, 0.7);
+        if (i % 5 === 0) this.rect(g, P.kelp.dark, x + (i % 10 === 0 ? -3 : 5), y + 1, 3, 2, 0.7);
       }
     });
 
