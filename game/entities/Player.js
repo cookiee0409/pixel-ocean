@@ -3,20 +3,21 @@
 // (lighting burst, hit sparks) are delegated to the scene's systems so the
 // systems stay decoupled, as the spec requests.
 /* global Phaser */
-import { PLAYER, SKILLS } from "../config.js";
+import { PLAYER, SKILLS, SINK_CURRENT } from "../config.js";
 
 export default class Player extends Phaser.Physics.Arcade.Sprite {
   constructor(scene, x, y) {
-    super(scene, x, y, "sub");
+    super(scene, x, y, "knight_idle1");
     scene.add.existing(this);
     scene.physics.add.existing(this);
 
     this.body.setAllowGravity(false);
     this.body.setDrag(PLAYER.drag, PLAYER.drag);
     this.body.setMaxVelocity(PLAYER.maxSpeed, PLAYER.maxSpeed);
-    this.body.setCircle(9, 8, 1);
+    this.body.setCircle(9, 9, 7); // fit the 38x32 knight sprite's torso/helm
     this.setCollideWorldBounds(true);
     this.setDepth(20);
+    this.play("knight_idle");
 
     this.hp = PLAYER.maxHp;
     this.oxygen = PLAYER.maxOxygen;
@@ -29,6 +30,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.cooldowns = { dash: 0, lightBurst: 0 };
     this.invulnUntil = 0;
     this.dashUntil = 0; // while dashing, the charge rams enemies
+    this.attackAnimUntil = 0;
     this.dashDamage = SKILLS.dash.damage;
     this.alive = true;
 
@@ -50,7 +52,9 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
   drive(input, dtMs) {
     if (!this.alive) return;
     const accel = PLAYER.accel;
-    this.body.setAcceleration(input.x * accel, input.y * accel);
+    // Gentle constant sink so descending is the default; steering left/right is
+    // the active control. Pressing up easily overcomes it.
+    this.body.setAcceleration(input.x * accel, input.y * accel + SINK_CURRENT);
 
     if (input.x !== 0 || input.y !== 0) {
       this.aim.set(input.x, input.y).normalize();
@@ -67,21 +71,33 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     if (input.dash) this.tryDash();
     if (input.light) this.tryLightBurst();
 
+    this.updateAnim();
+
     // Energy slowly regenerates.
     this.energy = Math.min(PLAYER.maxEnergy, this.energy + 0.012 * dtMs);
+  }
+
+  updateAnim() {
+    const now = this.scene.time.now;
+    let key = "knight_idle";
+    if (this.isDashing()) key = "knight_dash";
+    else if (now < this.attackAnimUntil) key = "knight_attack";
+    else if (this.body.velocity.lengthSq() > 400) key = "knight_swim";
+    if (this.anims.currentAnim?.key !== key) this.play(key, true);
   }
 
   tryAttack() {
     const now = this.scene.time.now;
     if (now < this.lastAttack + PLAYER.attackCooldown) return;
     this.lastAttack = now;
+    this.attackAnimUntil = now + 180;
     const dir = this.aim.lengthSq() > 0 ? this.aim.clone() : new Phaser.Math.Vector2(this.facing, 0);
     dir.normalize();
     const speed = 420;
     const muzzleX = this.x + dir.x * 18;
     const muzzleY = this.y + dir.y * 10;
     this.scene.fireProjectile(muzzleX, muzzleY, dir.x * speed, dir.y * speed, 14);
-    // Sound hook point: when audio is added, play "sfx_attack" here.
+    this.scene.sfx?.("attack");
   }
 
   tryDash() {
@@ -97,6 +113,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.invulnUntil = Math.max(this.invulnUntil, now + s.durationMs);
     this.dashUntil = now + s.durationMs;
     this.scene.spawnDashTrail(this.x, this.y);
+    this.scene.sfx?.("dash");
   }
 
   isDashing() {
@@ -110,6 +127,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.energy -= s.energy;
     this.cooldowns.lightBurst = now + s.cooldown;
     this.scene.triggerLightBurst(this.x, this.y, s.radius, s.damage);
+    this.scene.sfx?.("burst");
   }
 
   takeDamage(amount, sourceX, sourceY) {
@@ -135,6 +153,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     });
     this.scene.cameras.main.shake(160, 0.008);
     this.scene.spawnHitSpark(this.x, this.y, 0xff5d5d);
+    this.scene.sfx?.("hurt");
 
     if (this.hp <= 0) this.alive = false;
     return true;

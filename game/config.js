@@ -8,9 +8,23 @@ export const VIEW_HEIGHT = 450;
 // rest of the game can reason in meters while physics stays in pixels.
 export const PIXELS_PER_METER = 5;
 export const START_Y = 120; // player spawn; depth 0m maps here
-export const WORLD_WIDTH = VIEW_WIDTH;
+// The world is wider than the view so the cave can snake left/right while the
+// player descends — a zig-zag switchback rather than a straight vertical shaft.
+export const WORLD_WIDTH = 1600;
 export const MAX_DEPTH = 1850; // meters
 export const WORLD_HEIGHT = START_Y + MAX_DEPTH * PIXELS_PER_METER + 200;
+
+// Winding cave channel. centerX snakes as a sine of depth; the player swims
+// left/right (the base control) to follow it down. Walls fill everything
+// outside [center - CHANNEL_HALF, center + CHANNEL_HALF].
+export const CHANNEL_HALF = 156; // half-width of the navigable tunnel (px)
+export const CAVE_PERIOD = 1500; // px of descent per full left↔right swing
+export const CAVE_AMP = WORLD_WIDTH / 2 - CHANNEL_HALF - 50; // horizontal swing
+export const caveCenterX = (y) =>
+  WORLD_WIDTH / 2 + Math.sin(y * ((Math.PI * 2) / CAVE_PERIOD)) * CAVE_AMP;
+// Gentle constant sink so "down" is the default and steering left/right is the
+// active play, per the requested feel.
+export const SINK_CURRENT = 70;
 
 // Depth (m) <-> world y (px) helpers.
 export const depthToY = (depth) => START_Y + depth * PIXELS_PER_METER;

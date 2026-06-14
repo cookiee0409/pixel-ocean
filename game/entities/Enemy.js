@@ -13,6 +13,16 @@ export default class Enemy extends Phaser.Physics.Arcade.Sprite {
     this.setScale(scale);
     this.setDepth(12);
 
+    // gentle swim wobble (cheap liveliness, no extra frames)
+    scene.tweens.add({
+      targets: this,
+      scaleY: scale * 0.9,
+      duration: 650 + Math.random() * 400,
+      yoyo: true,
+      repeat: -1,
+      ease: "Sine.inOut",
+    });
+
     this.hp = def.hp;
     this.maxHp = def.hp;
     this.contactDamage = def.damage || 6;
@@ -120,8 +130,18 @@ export default class Enemy extends Phaser.Physics.Arcade.Sprite {
 
   die() {
     this.scene.onEnemyKilled(this);
-    if (this.glow) this.glow.destroy();
     this.destroy();
+  }
+
+  // Centralised cleanup (called by die() and by the cull sweep) so the sway
+  // tween and glow never outlive the creature.
+  destroy(fromScene) {
+    this.scene?.tweens?.killTweensOf(this);
+    if (this.glow) {
+      this.glow.destroy();
+      this.glow = null;
+    }
+    super.destroy(fromScene);
   }
 
   depth() {

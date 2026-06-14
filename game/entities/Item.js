@@ -32,4 +32,9 @@ export default class Item extends Phaser.Physics.Arcade.Sprite {
     // Gentle vertical bob.
     this.y = this.baseY + Math.sin((time / 600) + this.bobOffset) * 4;
   }
+
+  destroy(fromScene) {
+    this.scene?.tweens?.killTweensOf(this);
+    super.destroy(fromScene);
+  }
 }

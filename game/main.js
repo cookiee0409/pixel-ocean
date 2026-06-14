@@ -13,9 +13,10 @@ const config = {
   parent: "game",
   width: VIEW_WIDTH,
   height: VIEW_HEIGHT,
-  backgroundColor: "#62c8ff",
+  backgroundColor: "#4fc3e8",
   pixelArt: true, // crisp, blocky scaling — the requested dot-pixel look
   roundPixels: true,
+  antialias: false,
   scale: {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,

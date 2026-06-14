@@ -5,6 +5,7 @@
 // GameScene merges these with the keyboard each frame.
 /* global Phaser */
 import { VIEW_WIDTH, VIEW_HEIGHT, PLAYER } from "../config.js";
+import { PAL, CSS } from "../data/palette.js";
 
 const UI_DEPTH = 1000;
 
@@ -39,38 +40,63 @@ export default class Hud {
   }
 
   makeLabels() {
-    this.txt(18, 14, "HP", 11, "#ffb3b3");
-    this.txt(18, 34, "O₂", 11, "#9be7ff");
-    this.txt(18, 54, "EN", 11, "#ffe14d");
+    // Pixel-framed stats panel behind the bars (drawn once).
+    const p = this.scene.add.graphics().setScrollFactor(0).setDepth(UI_DEPTH - 1);
+    p.fillStyle(PAL.outline, 1);
+    p.fillRect(8, 8, 214, 66);
+    p.fillStyle(PAL.ui.panel, 0.92);
+    p.fillRect(10, 10, 210, 62);
+    p.lineStyle(2, PAL.ui.border, 0.9);
+    p.strokeRect(10, 10, 210, 62);
+
+    this.txt(18, 16, "HP", 10, CSS.hp);
+    this.txt(18, 38, "O₂", 10, CSS.o2);
+    this.txt(18, 56, "EN", 10, CSS.en);
   }
 
   makeDepthReadout() {
-    this.depthText = this.txt(VIEW_WIDTH - 18, 14, "Depth: 0 m", 18, "#ffffff", 1);
-    this.zoneText = this.txt(VIEW_WIDTH - 18, 38, "햇빛 바다", 13, "#bcd6ef", 1);
+    const p = this.scene.add.graphics().setScrollFactor(0).setDepth(UI_DEPTH - 1);
+    p.fillStyle(PAL.outline, 1);
+    p.fillRect(VIEW_WIDTH - 168, 8, 160, 50);
+    p.fillStyle(PAL.ui.panel, 0.92);
+    p.fillRect(VIEW_WIDTH - 166, 10, 156, 46);
+    p.lineStyle(2, PAL.ui.border, 0.9);
+    p.strokeRect(VIEW_WIDTH - 166, 10, 156, 46);
+    this.depthText = this.txt(VIEW_WIDTH - 18, 14, "Depth: 0 m", 18, CSS.gold, 1);
+    this.zoneText = this.txt(VIEW_WIDTH - 18, 38, "햇빛 바다", 13, CSS.dim, 1);
   }
 
   // ----------------------------------------------------------- bars redraw
   drawBars() {
     const g = this.barGfx;
     g.clear();
-    const x = 46;
-    const w = 150;
-    const h = 12;
-    const draw = (y, ratio, color, warn = false) => {
-      g.fillStyle(0x05111f, 0.85);
-      g.fillRect(x - 2, y - 2, w + 4, h + 4);
-      g.fillStyle(0x0d2236, 1);
+    const x = 38;
+    const w = 174;
+    const h = 11;
+    const now = this.scene.time.now;
+    const draw = (y, ratio, fill, warn = false) => {
+      // dark frame + slot
+      g.fillStyle(PAL.outline, 1);
+      g.fillRect(x - 1, y - 1, w + 2, h + 2);
+      g.fillStyle(PAL.ui.slot, 1);
       g.fillRect(x, y, w, h);
-      g.fillStyle(color, 1);
-      g.fillRect(x, y, w * Phaser.Math.Clamp(ratio, 0, 1), h);
+      // fill + gloss
+      const fw = Math.round(w * Phaser.Math.Clamp(ratio, 0, 1));
+      g.fillStyle(fill, 1);
+      g.fillRect(x, y, fw, h);
+      g.fillStyle(PAL.white, 0.22);
+      g.fillRect(x, y, fw, 2);
+      // segment notches (LCD look)
+      g.fillStyle(PAL.outline, 0.55);
+      for (let sx = x + 12; sx < x + w; sx += 12) g.fillRect(sx, y, 1, h);
       if (warn) {
-        g.lineStyle(2, 0xff5d5d, 0.5 + 0.5 * Math.sin(this.scene.time.now / 120));
+        g.lineStyle(2, PAL.ui.hp, 0.4 + 0.5 * Math.sin(now / 110));
         g.strokeRect(x - 2, y - 2, w + 4, h + 4);
       }
     };
-    draw(12, this.player.hp / PLAYER.maxHp, 0xff5d5d);
-    draw(32, this.player.oxygen / PLAYER.maxOxygen, 0x49c8ff, this.player.oxygen <= 25);
-    draw(52, this.player.energy / PLAYER.maxEnergy, 0xffe14d);
+    draw(16, this.player.hp / PLAYER.maxHp, PAL.ui.hp);
+    draw(38, this.player.oxygen / PLAYER.maxOxygen, PAL.ui.o2, this.player.oxygen <= 25);
+    draw(56, this.player.energy / PLAYER.maxEnergy, PAL.ui.en);
 
     // skill cooldown shading on the Q/E buttons
     this.updateCooldownRing(this.dashBtn, this.player.cooldownRatio("dash"));
@@ -87,11 +113,13 @@ export default class Hud {
     const panelY = VIEW_HEIGHT - panelH - 14;
 
     const panel = this.scene.add.graphics().setScrollFactor(0).setDepth(UI_DEPTH - 1);
-    panel.fillStyle(0x06182e, 0.82);
+    panel.fillStyle(PAL.outline, 1);
+    panel.fillRoundedRect(panelX - 2, panelY - 2, panelW + 4, panelH + 4, 11);
+    panel.fillStyle(PAL.ui.panel, 0.9);
     panel.fillRoundedRect(panelX, panelY, panelW, panelH, 10);
-    panel.lineStyle(2, 0x2f5c86, 0.9);
+    panel.lineStyle(2, PAL.ui.border, 0.9);
     panel.strokeRoundedRect(panelX, panelY, panelW, panelH, 10);
-    this.txt(panelX + 12, panelY + 8, "전투 · 스킬", 11, "#7fb6dc");
+    this.txt(panelX + 12, panelY + 8, "전투 · 스킬", 11, CSS.dim);
 
     const r = 22;
     const cy = panelY + panelH - 30;

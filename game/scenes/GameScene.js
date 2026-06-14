@@ -10,7 +10,11 @@ import {
   START_Y,
   MAX_DEPTH,
   BOSS_DEPTH,
+  CHANNEL_HALF,
+  caveCenterX,
+  yToDepth,
 } from "../config.js";
+import { PAL } from "../data/palette.js";
 import { ZONES } from "../data/zones.js";
 import { CREATURES, creatureById } from "../data/creatures.js";
 import Player from "../entities/Player.js";
@@ -21,6 +25,7 @@ import OxygenSystem from "../systems/OxygenSystem.js";
 import CombatSystem from "../systems/CombatSystem.js";
 import SpawnSystem from "../systems/SpawnSystem.js";
 import LightingSystem from "../systems/LightingSystem.js";
+import AudioSystem from "../systems/AudioSystem.js";
 import Hud from "../ui/Hud.js";
 
 export default class GameScene extends Phaser.Scene {
@@ -42,6 +47,7 @@ export default class GameScene extends Phaser.Scene {
     this.cameras.main.fadeIn(300, 2, 12, 28);
 
     this.buildBackdrop();
+    this.buildCave();
 
     // Entity groups. Projectiles are a plain group used only for overlap
     // tracking; each Projectile owns its own physics body and lifecycle.
@@ -50,8 +56,9 @@ export default class GameScene extends Phaser.Scene {
     this.friendlies = this.add.group();
     this.items = this.add.group();
 
-    // Player + camera.
-    this.player = new Player(this, WORLD_WIDTH / 2, START_Y);
+    // Player + camera. Spawn inside the cave mouth.
+    this.player = new Player(this, caveCenterX(START_Y), START_Y);
+    this.physics.add.collider(this.player, this.caveWalls);
     this.cameras.main.startFollow(this.player, true, 0.12, 0.12);
 
     // Systems.
@@ -72,29 +79,51 @@ export default class GameScene extends Phaser.Scene {
       items: this.items,
     });
 
+    // Audio (procedural SFX + ambient BGM). sfx() is the hook entities call.
+    this.audio = new AudioSystem(this);
+    this.sfx = (name) => this.audio.play(name);
+    this.audio.startMusic();
+
     // HUD (reads this.depthSystem each frame).
     this.hud = new Hud(this, this.player);
     this.hud.showBanner(ZONES[0].name, "#9be7ff");
 
     this.setupInput();
 
-    // Ambient glow motes for the dark zones.
+    // Ambient bioluminescent motes (deep zones) — drift gently, additive glow.
     this.motes = this.add
       .particles(0, 0, "mote", {
         x: { min: 0, max: VIEW_WIDTH },
         y: { min: 0, max: VIEW_HEIGHT },
-        lifespan: 4000,
-        speedY: { min: -6, max: 6 },
-        speedX: { min: -6, max: 6 },
-        scale: { min: 0.4, max: 1 },
+        lifespan: 4200,
+        speedY: { min: -7, max: 7 },
+        speedX: { min: -7, max: 7 },
+        scale: { min: 0.4, max: 1.1 },
         alpha: { start: 0.6, end: 0 },
-        frequency: 400,
+        frequency: 360,
         quantity: 1,
         blendMode: Phaser.BlendModes.ADD,
         emitting: false,
       })
       .setScrollFactor(0)
       .setDepth(85);
+
+    // Marine snow — fine flecks drifting downward through the deep.
+    this.marineSnow = this.add
+      .particles(0, -10, "marine_snow", {
+        x: { min: 0, max: VIEW_WIDTH },
+        y: -10,
+        lifespan: 6000,
+        speedY: { min: 10, max: 26 },
+        speedX: { min: -6, max: 6 },
+        scale: { min: 0.6, max: 1.4 },
+        alpha: { start: 0.5, end: 0 },
+        frequency: 240,
+        quantity: 1,
+        emitting: false,
+      })
+      .setScrollFactor(0)
+      .setDepth(84);
   }
 
   // ---------------------------------------------------------------- input
@@ -156,7 +185,7 @@ export default class GameScene extends Phaser.Scene {
 
     this.spawn.update(time);
     this.handleInteraction(input.interact);
-    this.updateMotes();
+    this.updateAmbience(time);
     this.checkBoss();
 
     this.hud.update();
@@ -165,9 +194,22 @@ export default class GameScene extends Phaser.Scene {
     else if (this.depthSystem.depth >= MAX_DEPTH) this.endRun("depth");
   }
 
-  updateMotes() {
-    const deep = this.depthSystem.depth > 800;
-    this.motes.emitting = deep;
+  updateAmbience(time) {
+    const depth = this.depthSystem.depth;
+    // bioluminescent motes appear from the deep; marine snow from mid-deep on
+    this.motes.emitting = depth > 750;
+    this.marineSnow.emitting = depth > 450;
+
+    // god rays only read near the surface — fade them out as you descend
+    if (this.shafts) {
+      const k = Phaser.Math.Clamp(1 - depth / 360, 0, 1);
+      for (const s of this.shafts) s.setVisible(k > 0.02);
+    }
+
+    // gentle water drift on the camera (subtle, keeps the scene alive)
+    const cam = this.cameras.main;
+    cam.followOffset.x = Math.sin(time / 1500) * 3;
+    cam.followOffset.y = Math.cos(time / 1900) * 2;
   }
 
   // --------------------------------------------------- interaction (F)
@@ -249,6 +291,7 @@ export default class GameScene extends Phaser.Scene {
     this.score += enemy.def.score || 0;
     this.registerCreature(enemy.def);
     this.spawnHitSpark(enemy.x, enemy.y, 0xfff2a8);
+    this.sfx?.("hit");
     // drop a resource sometimes
     if (enemy.def.drop && Math.random() < 0.6) {
       this.items.add(new Item(this, enemy.x, enemy.y, enemy.def.drop).spawn());
@@ -261,12 +304,14 @@ export default class GameScene extends Phaser.Scene {
     this.itemsCollected += 1;
     this.score += def.score || 0;
     this.spawnHitSpark(item.x, item.y, 0xbff0ff);
+    this.sfx?.("collect");
     this.hud.showToast(`${def.name} 획득`);
     item.destroy();
   }
 
   onZoneChanged(zone, prev) {
     const goingDeeper = ZONES.indexOf(zone) > ZONES.indexOf(prev);
+    this.sfx?.("zone");
     this.hud.showBanner(zone.name, goingDeeper ? "#ffd34d" : "#9be7ff");
     if (goingDeeper && zone.id !== "sunlight") {
       this.hud.showToast("더 깊어진다 — 산소 소모가 빨라진다");
@@ -312,6 +357,7 @@ export default class GameScene extends Phaser.Scene {
     if (this.ending) return;
     this.ending = true;
     this.physics.pause();
+    this.audio?.stopMusic();
     this.hud.setPrompt("");
     const friendsMet = [...this.codex].filter((id) => CREATURES[id]?.kind === "friendly").length;
     const stats = {
@@ -328,35 +374,172 @@ export default class GameScene extends Phaser.Scene {
   }
 
   // --------------------------------------------------------- backdrop
-  buildBackdrop() {
-    // Sun beams near the surface (parallax, sunlight zone only feel).
-    for (let i = 0; i < 5; i++) {
-      const beam = this.add
-        .rectangle(80 + i * 160, 60, 40, 320, 0xffffff, 0.06)
-        .setOrigin(0.5, 0)
-        .setAngle(8)
-        .setScrollFactor(0.4)
-        .setDepth(1);
-      this.tweens.add({ targets: beam, alpha: 0.12, duration: 2600 + i * 300, yoyo: true, repeat: -1 });
-    }
+  // Per-biome prop palettes split into parallax layers (far/mid/near).
+  static LAYERS = {
+    sunlight: {
+      far: ["kelp_tall"],
+      mid: ["rock", "coral", "coral_fan", "coral2", "anemone", "sand_mound"],
+      near: ["seaweed", "kelp", "anemone", "coral"],
+    },
+    midsea: {
+      far: ["kelp_tall", "rock_big"],
+      mid: ["rock", "rock2", "kelp", "coral2", "sand_mound", "shipwreck"],
+      near: ["kelp", "seaweed", "rock2"],
+    },
+    deepsea: {
+      far: ["rock_deep", "ruin_pillar"],
+      mid: ["rock_deep", "rock_big", "glow_plant", "vent", "ruin_pillar"],
+      near: ["glow_plant", "kelp_tall"],
+    },
+    abyss: {
+      far: ["rock_deep", "ruin_pillar"],
+      mid: ["rock_deep", "vent", "glow_plant"],
+      near: ["rock_deep", "glow_plant"],
+    },
+  };
 
-    // Scatter seaweed / coral / rocks down the world for a sense of place.
-    const props = ["seaweed", "coral", "rock", "seaweed"];
-    for (let y = 260; y < WORLD_HEIGHT - 80; y += Phaser.Math.Between(220, 360)) {
-      const onLeft = Math.random() > 0.5;
-      const x = onLeft ? Phaser.Math.Between(10, 90) : Phaser.Math.Between(WORLD_WIDTH - 90, WORLD_WIDTH - 10);
-      const key = Phaser.Utils.Array.GetRandom(props);
-      const depthFactor = y < 4000 ? 1 : 0.55; // fade detail in the deep
-      this.add
+  biomeAtY(y) {
+    const d = yToDepth(y);
+    if (d < 300) return "sunlight";
+    if (d < 800) return "midsea";
+    if (d < 1500) return "deepsea";
+    return "abyss";
+  }
+
+  // Per-biome stone tints for the cave walls (multiply: bright surface → dark deep).
+  static WALL_TINT = {
+    sunlight: 0xcfe0ea,
+    midsea: 0x9fb6cc,
+    deepsea: 0x5f7290,
+    abyss: 0x39465f,
+  };
+
+  // Random x inside the navigable channel at depth y (for spawns/props).
+  channelXAt(y, pad = 26) {
+    const cx = caveCenterX(y);
+    const half = Math.max(20, CHANNEL_HALF - pad);
+    return cx + Phaser.Math.Between(-half, half);
+  }
+
+  // Build the winding cave: fill everything outside the channel with dense stone
+  // wall tiles and matching static colliders, so the player must steer the
+  // zig-zag tunnel downward.
+  buildCave() {
+    this.caveWalls = [];
+    const BAND = 72;
+    for (let y = 0; y < WORLD_HEIGHT; y += BAND) {
+      const cx = caveCenterX(y + BAND / 2);
+      const leftEdge = Math.round(cx - CHANNEL_HALF);
+      const rightEdge = Math.round(cx + CHANNEL_HALF);
+      const tint = GameScene.WALL_TINT[this.biomeAtY(y + BAND / 2)];
+      if (leftEdge > 2) this.addWall(0, y, leftEdge, BAND, tint, "right");
+      if (rightEdge < WORLD_WIDTH - 2) this.addWall(rightEdge, y, WORLD_WIDTH - rightEdge, BAND, tint, "left");
+    }
+  }
+
+  addWall(x, y, w, h, tint, lipSide) {
+    const key = (Math.floor(y / 72) + Math.floor(x / 200)) % 2 === 0 ? "cave_wall" : "cave_wall2";
+    this.add.tileSprite(x, y, w, h, key).setOrigin(0, 0).setDepth(4).setTint(tint);
+    // carved inner lip at the channel edge
+    const lipX = lipSide === "right" ? x + w - 10 : x;
+    this.add
+      .image(lipX, y, "cave_edge")
+      .setOrigin(0, 0)
+      .setDisplaySize(10, h)
+      .setDepth(5)
+      .setFlipX(lipSide === "left")
+      .setTint(tint);
+    // invisible static collider for this wall block
+    const zone = this.add.zone(x + w / 2, y + h / 2, w, h);
+    this.physics.add.existing(zone, true);
+    this.caveWalls.push(zone);
+  }
+
+  buildBackdrop() {
+    this.buildLightShafts();
+
+    const swayKeys = /kelp|seaweed|anemone|glow_plant/;
+    const sway = (img) => {
+      if (!swayKeys.test(img.texture.key)) return;
+      this.tweens.add({
+        targets: img,
+        angle: { from: -4, to: 4 },
+        duration: 2200 + Math.random() * 1600,
+        yoyo: true,
+        repeat: -1,
+        ease: "Sine.inOut",
+      });
+    };
+
+    // Props grow from the cave walls along the winding channel, with occasional
+    // mid-water drifters (far, faded) and close foreground silhouettes for depth.
+    for (let y = START_Y + 120; y < WORLD_HEIGHT - 90; y += Phaser.Math.Between(70, 130)) {
+      const biome = this.biomeAtY(y);
+      const set = GameScene.LAYERS[biome];
+      const cx = caveCenterX(y);
+      const onLeft = Math.random() < 0.5;
+      const edge = onLeft ? cx - CHANNEL_HALF : cx + CHANNEL_HALF;
+      const key = Phaser.Utils.Array.GetRandom(set.near.concat(set.mid));
+      const x = edge + (onLeft ? Phaser.Math.Between(0, 24) : -Phaser.Math.Between(0, 24));
+      const img = this.add
         .image(x, y, key)
         .setOrigin(0.5, 1)
-        .setAlpha(depthFactor)
-        .setScrollFactor(1, 0.92)
-        .setDepth(2)
-        .setFlipX(Math.random() > 0.5);
-    }
+        .setDepth(6)
+        .setFlipX(!onLeft)
+        .setScale(Phaser.Math.FloatBetween(0.85, 1.3));
+      sway(img);
 
-    // Sea floor cap at the very bottom.
-    this.add.rectangle(WORLD_WIDTH / 2, WORLD_HEIGHT - 10, WORLD_WIDTH, 40, 0x05101f).setDepth(2);
+      // close foreground silhouette (over the player, faded) for parallax depth
+      if (Math.random() < 0.16) {
+        const fKey = Phaser.Utils.Array.GetRandom(set.near);
+        const fEdge = onLeft ? cx + CHANNEL_HALF : cx - CHANNEL_HALF;
+        const f = this.add
+          .image(fEdge + (onLeft ? -10 : 10), y + 30, fKey)
+          .setOrigin(0.5, 1)
+          .setDepth(24)
+          .setAlpha(0.45)
+          .setFlipX(onLeft)
+          .setScale(Phaser.Math.FloatBetween(1.5, 2.1));
+        sway(f);
+      }
+
+      // faded mid-water drifter for far depth
+      if (Math.random() < 0.22) {
+        const dKey = Phaser.Utils.Array.GetRandom(set.far);
+        this.add
+          .image(this.channelXAt(y, 10), y + Phaser.Math.Between(-10, 20), dKey)
+          .setOrigin(0.5, 1)
+          .setDepth(3)
+          .setAlpha(0.4)
+          .setTint(PAL.water[biome].fog)
+          .setScale(Phaser.Math.FloatBetween(0.8, 1.2));
+      }
+    }
+  }
+
+  // Near-surface god rays (sunlight biome). Parallax + slow shimmer.
+  buildLightShafts() {
+    const topMost = START_Y + 40;
+    for (let i = 0; i < 6; i++) {
+      const beam = this.add
+        .image(60 + i * 130 + Phaser.Math.Between(-20, 20), topMost, "light_shaft")
+        .setOrigin(0.5, 0)
+        .setAngle(10 + Phaser.Math.Between(-3, 3))
+        .setScrollFactor(0.45, 0.5)
+        .setBlendMode(Phaser.BlendModes.ADD)
+        .setAlpha(0)
+        .setDepth(3)
+        .setScale(Phaser.Math.FloatBetween(0.8, 1.4), Phaser.Math.FloatBetween(1.4, 2.4));
+      this.tweens.add({
+        targets: beam,
+        alpha: Phaser.Math.FloatBetween(0.1, 0.22),
+        duration: 2600 + i * 350,
+        yoyo: true,
+        repeat: -1,
+        ease: "Sine.inOut",
+      });
+      this.shafts = this.shafts || [];
+      this.shafts.push(beam);
+    }
   }
 }

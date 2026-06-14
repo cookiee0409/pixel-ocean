@@ -32,7 +32,6 @@ export default class SpawnSystem {
 
   trySpawn(cam, zone) {
     const bounds = this.scene.physics.world.bounds;
-    const x = Phaser.Math.Between(40, bounds.width - 40);
     // Spawn just below the visible area so creatures rise into view as you dive,
     // with an occasional one above for variety.
     const below = Math.random() > 0.25;
@@ -40,6 +39,8 @@ export default class SpawnSystem {
       ? cam.scrollY + VIEW_HEIGHT + Phaser.Math.Between(30, 140)
       : cam.scrollY - Phaser.Math.Between(30, 100);
     if (y > bounds.height - 20) return;
+    // Keep spawns inside the winding cave channel, not buried in the walls.
+    const x = this.scene.channelXAt ? this.scene.channelXAt(y, 34) : Phaser.Math.Between(40, bounds.width - 40);
 
     const roll = Math.random();
     const scale = zone.creatureScale;

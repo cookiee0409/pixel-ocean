@@ -13,6 +13,16 @@ export default class FriendlyCreature extends Phaser.Physics.Arcade.Sprite {
     this.setScale(scale);
     this.setDepth(12);
 
+    // gentle swim wobble
+    scene.tweens.add({
+      targets: this,
+      scaleY: scale * 0.9,
+      duration: 700 + Math.random() * 400,
+      yoyo: true,
+      repeat: -1,
+      ease: "Sine.inOut",
+    });
+
     this.dir = new Phaser.Math.Vector2(Phaser.Math.RND.sign(), Phaser.Math.FloatBetween(-0.2, 0.2)).normalize();
     this.turnAt = 0;
     this.interacted = false;
@@ -61,5 +71,14 @@ export default class FriendlyCreature extends Phaser.Physics.Arcade.Sprite {
 
   depth() {
     return yToDepth(this.y);
+  }
+
+  destroy(fromScene) {
+    this.scene?.tweens?.killTweensOf(this);
+    if (this.glow) {
+      this.glow.destroy();
+      this.glow = null;
+    }
+    super.destroy(fromScene);
   }
 }
