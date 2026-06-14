@@ -352,61 +352,76 @@ export default class BootScene extends Phaser.Scene {
   // animation frame so the knight idles, swims, attacks, and dashes.
   drawKnight(g, fin, lean, sword) {
     const P = PAL;
-    // oxygen tank on the back
-    this.oRect(g, P.tankRed, 3, 10, 5, 12);
-    this.rect(g, 0xe8916a, 4, 11, 2, 9, 0.85);
-    this.rect(g, P.steel.mid, 4, 8, 3, 3);
-    this.rect(g, P.outline, 6, 9, 5, 2); // air hose
-    // back fin (flaps with `fin`)
-    this.oRect(g, P.armor.dark, 1, 21 + fin, 8, 4);
-    this.rect(g, P.armor.mid, 2, 22 + fin, 5, 2, 0.8);
-    // torso armour
-    const tx = 9 + lean;
-    this.oRect(g, P.armor.mid, tx, 10, 12, 13);
-    this.rect(g, P.armor.lite, tx + 1, 11, 9, 3, 0.9);
-    this.rect(g, P.armor.dark, tx + 1, 20, 10, 2);
-    this.rect(g, P.gold.mid, tx + 1, 17, 10, 2);
-    this.rect(g, P.gold.lite, tx + 5, 12, 2, 4);
-    // legs / front flipper
-    this.oRect(g, P.armor.dark, tx + 1, 23, 5, 4);
-    this.oRect(g, P.armor.dark, tx + 7, 23, 7, 4 - fin);
-    this.rect(g, P.steel.dark, tx + 8, 24, 6, 2, 0.8);
-    // shield
-    this.oRect(g, P.armor.lite, tx - 3, 14, 4, 8);
-    this.rect(g, P.gold.mid, tx - 2, 15, 2, 6, 0.85);
-    // helmet
-    const hx = 19 + lean;
-    this.oRect(g, P.steel.mid, hx, 4, 11, 12);
-    this.rect(g, P.steel.lite, hx + 1, 5, 9, 3, 0.9);
-    this.rect(g, P.steel.dark, hx + 1, 13, 9, 2);
-    this.rect(g, P.gold.mid, hx, 6, 11, 1, 0.8);
+    const lx = lean;
+    // --- oxygen tank on the back + hose ---
+    this.oRect(g, P.tankRed, 3, 14, 7, 17);
+    this.rect(g, 0xe8916a, 4, 15, 2, 14, 0.85);
+    this.rect(g, 0x8f3a2a, 8, 15, 1, 14, 0.6);
+    this.rect(g, P.steel.mid, 4, 10, 4, 5); // valve
+    this.rect(g, P.steel.lite, 4, 10, 2, 1, 0.85);
+    this.rect(g, P.outline, 8, 13, 7, 2); // air hose
+    this.rect(g, P.steel.dark, 9, 12, 5, 1, 0.7);
+    // --- back fin (flaps with fin) ---
+    this.oRect(g, P.armor.dark, 0, 27 + fin * 2, 10, 5);
+    this.rect(g, P.armor.mid, 1, 28 + fin * 2, 7, 2, 0.8);
+    // --- torso armour ---
+    const tx = 12 + lx;
+    this.oRect(g, P.armor.mid, tx, 13, 16, 17);
+    this.rect(g, P.armor.lite, tx + 1, 14, 12, 3, 0.9); // top sheen
+    this.rect(g, P.armor.dark, tx + 1, 27, 14, 2, 0.85); // bottom shade
+    this.rect(g, P.gold.mid, tx + 1, 21, 14, 2); // belt
+    this.rect(g, P.gold.lite, tx + 1, 21, 14, 1, 0.7);
+    this.rect(g, P.armor.dark, tx + 1, 18, 14, 1, 0.6); // plate seam
+    // rivets
+    this.rect(g, P.steel.lite, tx + 2, 15, 1, 1, 0.9);
+    this.rect(g, P.steel.lite, tx + 12, 15, 1, 1, 0.9);
+    this.rect(g, P.steel.lite, tx + 2, 25, 1, 1, 0.9);
+    this.rect(g, P.steel.lite, tx + 12, 25, 1, 1, 0.9);
+    // --- legs / front flipper (animated) ---
+    this.oRect(g, P.armor.dark, tx + 1, 30, 6, 5);
+    this.oRect(g, P.armor.dark, tx + 8, 30, 8, 5 - fin);
+    this.rect(g, P.steel.dark, tx + 9, 31, 7, 2, 0.8);
+    this.rect(g, P.armor.mid, tx + 2, 31, 3, 1, 0.7);
+    // --- shield on front arm ---
+    this.oRect(g, P.armor.lite, tx - 3, 17, 5, 11);
+    this.rect(g, P.gold.mid, tx - 2, 18, 3, 9, 0.85);
+    this.rect(g, P.gold.lite, tx - 1, 19, 1, 7, 0.8);
+    this.rect(g, P.plume.mid, tx - 2, 21, 3, 3, 0.85); // emblem
+    // --- helmet ---
+    const hx = 26 + lx;
+    this.oRect(g, P.steel.mid, hx, 6, 15, 16);
+    this.rect(g, P.steel.lite, hx + 1, 7, 12, 3, 0.9);
+    this.rect(g, P.steel.dark, hx + 1, 18, 12, 2, 0.85);
+    this.rect(g, P.gold.mid, hx, 8, 15, 1, 0.8); // brow band
+    this.rect(g, P.steel.lite, hx + 1, 7, 1, 1, 0.9); // rivets
+    this.rect(g, P.steel.lite, hx + 12, 7, 1, 1, 0.9);
     // porthole visor
-    this.rect(g, P.outline, hx + 2, 7, 7, 6);
-    this.rect(g, P.glassDark, hx + 3, 8, 5, 4);
-    this.rect(g, P.glass, hx + 4, 8, 3, 2, 0.95);
-    this.rect(g, P.white, hx + 4, 8, 1, 1, 0.9);
-    this.rect(g, P.gold.mid, hx + 1, 5, 1, 1);
-    this.rect(g, P.gold.mid, hx + 8, 5, 1, 1);
-    // crest
-    this.oRect(g, P.plume.mid, hx + 2, 1, 6, 3);
-    this.rect(g, P.plume.lite, hx + 2, 1, 6, 1, 0.9);
-    // glowing sword
+    this.rect(g, P.outline, hx + 3, 10, 10, 8);
+    this.rect(g, P.glassDark, hx + 4, 11, 8, 6);
+    this.rect(g, P.glass, hx + 5, 11, 5, 3, 0.95);
+    this.rect(g, P.white, hx + 5, 11, 2, 1, 0.9); // glint
+    this.rect(g, P.gold.mid, hx + 3, 10, 10, 1, 0.7); // visor rim
+    // crest plume
+    this.oRect(g, P.plume.mid, hx + 3, 1, 9, 5);
+    this.rect(g, P.plume.lite, hx + 3, 1, 9, 1, 0.9);
+    this.rect(g, P.plume.mid, hx + 6, 0, 3, 2, 0.8);
+    // --- glowing sword ---
     if (sword === "thrust") {
-      this.rect(g, P.gold.mid, hx + 9, 9, 3, 2);
-      this.rect(g, P.outline, hx + 11, 8, 6, 4);
-      this.rect(g, P.bio.cyan, hx + 12, 9, 5, 2, 0.95);
-      this.rect(g, P.white, hx + 13, 9, 4, 1, 0.95);
+      this.rect(g, P.gold.mid, hx + 12, 13, 4, 2); // hilt
+      this.rect(g, P.outline, hx + 15, 12, 11, 4);
+      this.rect(g, P.bio.cyan, hx + 16, 13, 10, 2, 0.95);
+      this.rect(g, P.white, hx + 17, 13, 7, 1, 0.95);
     } else {
-      this.rect(g, P.gold.mid, hx + 6, 15, 3, 2);
-      this.rect(g, P.outline, hx + 8, 3, 3, 13);
-      this.rect(g, P.bio.cyan, hx + 8, 4, 2, 11, 0.9);
-      this.rect(g, P.white, hx + 8, 4, 1, 11, 0.6);
+      this.rect(g, P.gold.mid, hx + 9, 20, 4, 2); // hilt at side
+      this.rect(g, P.outline, hx + 11, 3, 4, 18);
+      this.rect(g, P.bio.cyan, hx + 11, 4, 2, 16, 0.9);
+      this.rect(g, P.white, hx + 11, 4, 1, 16, 0.6);
     }
   }
 
   makePlayer() {
-    const W = 38;
-    const H = 32;
+    const W = 46;
+    const H = 40;
     this.draw("knight_idle1", W, H, (g) => this.drawKnight(g, 0, 0, "rest"));
     this.draw("knight_idle2", W, H, (g) => this.drawKnight(g, 1, 0, "rest"));
     this.draw("knight_swim1", W, H, (g) => this.drawKnight(g, 0, 1, "rest"));

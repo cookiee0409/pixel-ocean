@@ -14,7 +14,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.body.setAllowGravity(false);
     this.body.setDrag(PLAYER.drag, PLAYER.drag);
     this.body.setMaxVelocity(PLAYER.maxSpeed, PLAYER.maxSpeed);
-    this.body.setCircle(9, 9, 7); // fit the 38x32 knight sprite's torso/helm
+    this.body.setCircle(11, 12, 9); // fit the 46x40 knight sprite's torso/helm
     this.setCollideWorldBounds(true);
     this.setDepth(20);
     this.play("knight_idle");
